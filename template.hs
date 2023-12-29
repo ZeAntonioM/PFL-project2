@@ -10,20 +10,59 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
--- createEmptyStack :: Stack
-createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
+data Value = IntValue Integer | TT | FF deriving Show
+type Stack  =  [Value]
+type State =  [(String, Value)] 
 
--- stack2Str :: Stack -> String
-stack2Str = undefined -- TODO, Uncomment all the other function type declarations as you implement them
+value2Str :: Value -> String
+value2Str value = case value of
+  IntValue n -> show n
+  TT -> "True"
+  FF -> "False"
+
+pair2Str :: ([Char], Value) -> [Char]
+pair2Str (var, value) = var ++ "=" ++ value2Str value
+
+
+
+stateSort :: State -> State
+stateSort [] = []
+stateSort ((key,value):xs) = stateSort lower ++ [(key,value)] ++ stateSort higher
+  where 
+    lower = [(x,y) | (x,y)<-xs, x<=key] 
+    higher = [(x,y) | (x,y)<-xs, x>key]
+
+createEmptyStack :: Stack
+createEmptyStack =  [] -- TODO, Uncomment the function signature after defining Stack
+
+stack2Str :: Stack -> String
+stack2Str (value:[]) = value2Str value ++ "." 
+stack2Str (value:rest) = value2Str value ++ "," ++ stack2Str rest
+ -- TODO, Uncomment all the other function type declarations as you implement them
 
 -- createEmptyState :: State
-createEmptyState = undefined -- TODO, Uncomment the function signature after defining State
+createEmptyState :: State
+createEmptyState = []
 
--- state2Str :: State -> String
-state2Str = undefined -- TODO
 
--- run :: (Code, Stack, State) -> (Code, Stack, State)
-run = undefined -- TODO
+state2Str :: State -> String
+state2Str state = state2StrAux (stateSort state)
+
+state2StrAux :: [([Char], Value)] -> [Char]
+state2StrAux (curr:[]) = pair2Str curr ++ "." 
+state2StrAux  (curr:rest) = pair2Str curr ++ "," ++ state2Str rest
+
+execute :: Inst-> Stack-> State -> (Stack, State)
+execute (Push n) stack2 state = ( IntValue n:stack2, state)
+execute (Tru) stack2 state = ( TT:stack2, state)
+execute (Fals) stack2 state = ( FF:stack2, state)
+
+
+run :: (Code, Stack, State) -> (Code, Stack, State)
+run ([] , stack, state )= ([], stack, state)
+run (instruction: rest, stack, state) = run ( rest, stack, state')
+  where (stack', state') = execute instruction stack state
+
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
@@ -81,3 +120,14 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+
+
+exampleStack :: State
+exampleStack = [("var",  TT),("ola", FF), ("dia", IntValue 42)]
+
+exampleStorage :: State
+exampleStorage = [("x", IntValue 5), ("a", FF), ("b", IntValue 3), ("c", TT)]
+
+
+main :: IO ()
+main = putStrLn $ state2Str exampleStorage
