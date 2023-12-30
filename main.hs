@@ -1,9 +1,5 @@
--- PFL 2023/24 - Haskell practical assignment quickstart
--- Updated on 27/12/2023
-
 -- Part 1
 
--- Do not modify our definition of Inst and Code
 data Inst =
   Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
   Branch Code Code | Loop Code Code
@@ -26,7 +22,7 @@ isBool FF = True
 isBool _ = False
 
 
--- Function to remove the first occurance of a pair with a key from a list 
+-- Function to remove the first occurrence of a pair with a key from a list 
 removeKey::Eq a => String -> [(String, a)] -> [(String, a)] 
 removeKey _ [] = []  -- Base case: empty list, nothing to remove
 removeKey key ((k,value):ys)
@@ -97,8 +93,10 @@ state2StrAux [] = ""
 state2StrAux [curr] = pair2Str curr
 state2StrAux  (curr:rest) = pair2Str curr ++ "," ++ state2Str rest
 
+
+
 -- Function to execute an instruction
-execute :: Inst-> Stack-> State -> (Stack, State)
+execute :: Inst -> Stack -> State -> (Stack, State)
 
 -- Instruction Push n: push the integer n on the stack
 execute (Push n) stack state = ( IntValue n:stack, state)
@@ -225,20 +223,39 @@ You should get an exception with the string: "Run-time error"
 
 
 -- Part 2
-
+ 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
+data Aexp = Num Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
+data Bexp = Bool Bool | EqE Aexp Aexp | LeE Aexp Aexp | NegE Bexp | AndE Bexp Bexp deriving Show
+data Stm = Assign String Aexp | Comp Stm Stm | If Bexp Stm Stm | While Bexp Stm deriving Show
+type Program = [Stm]
 
--- compA :: Aexp -> Code
-compA = undefined -- TODO
+compA :: Aexp -> Code
+compA (Num n) = [Push n]
+compA (Var x) = [Fetch x]
+compA (AddE a1 a2) = compA a2 ++ compA a1 ++ [Add]
+compA (SubE a1 a2) = compA a2 ++ compA a1 ++ [Sub]
+compA (MultE a1 a2) = compA a2 ++ compA a1 ++ [Mult]
 
--- compB :: Bexp -> Code
-compB = undefined -- TODO
+compB :: Bexp -> Code
+compB (Bool b) = if b then [Tru] else [Fals]
+compB (EqE a1 a2) = compA a2 ++ compA a1 ++ [Equ]
+compB (LeE a1 a2) = compA a2 ++ compA a1 ++ [Le]
+compB (NegE b) = compB b ++ [Neg]
+compB (AndE b1 b2) = compB b2 ++ compB b1 ++ [And]
 
--- compile :: Program -> Code
-compile = undefined -- TODO
+compile :: Program -> Code
+compile [] = []
+compile (Assign x a:rest) = compA a ++ [Store x] ++ compile rest
+compile (Comp s1 s2:rest) = compile (s1:s2:rest)
+compile (If b s1 s2:rest) = compB b ++ [Branch (compile (s1:rest)) (compile (s2:rest))]
+compile (While b s:rest) = compB b ++ [Loop (compB b) (compile [s])] ++ compile rest
 
--- parse :: String -> Program
+parse :: String -> Program
 parse = undefined -- TODO
+
+lexer :: String -> [String]
+lexer = undefined -- TODO
 
 -- To help you test your parser
 testParser :: String -> (String, String)
@@ -258,16 +275,3 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
-
-
-exampleStack :: Stack
-exampleStack = [IntValue 42, FF, IntValue 10]
-
-exampleStorage :: State
-exampleStorage = [("x", IntValue 5), ("a", FF), ("b", IntValue 3), ("c", TT)]
-
-exampleCode = [Push 10]
-
-main :: IO ()
-main = putStrLn $ stack2Str stack 
-  where (code,stack, state) = run (exampleCode, [],exampleStorage) 
