@@ -1,5 +1,4 @@
 -- Part 1
-
 data Inst =
   Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
   Branch Code Code | Loop Code Code
@@ -251,12 +250,6 @@ compile (Comp s1 s2:rest) = compile (s1:s2:rest)
 compile (If b s1 s2:rest) = compB b ++ [Branch (compile (s1:rest)) (compile (s2:rest))]
 compile (While b s:rest) = compB b ++ [Loop (compB b) (compile [s])] ++ compile rest
 
-parse :: String -> Program
-parse = undefined -- TODO
-
-lexer :: String -> [String]
-lexer = undefined -- TODO
-
 -- To help you test your parser
 testParser :: String -> (String, String)
 testParser programCode = (stack2Str stack, state2Str state)
@@ -275,3 +268,7 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+
+
+main :: IO ()
+main = undefined
