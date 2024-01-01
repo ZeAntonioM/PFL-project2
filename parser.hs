@@ -11,8 +11,8 @@ insideAux (")":string) 1 = []
 insideAux (")":string) n = ")": insideAux string (n-1)
 insideAux (x:string) n = x:insideAux string n
 
-statement:: String -> String 
-statement (';':string) = []
+statement:: [String] -> [String] 
+statement (";":string) = []
 statement (x:string) = x:statement string
 
 precedence:: String -> Integer
@@ -41,6 +41,33 @@ parseAexAux [] x left right = Node x (parseAexAux left [] [] []) (parseAexAux ri
 parseAexAux (token:string) "" left right = parseAexAux string token left right
 parseAexAux (token:string) x left right | precedence token > precedence x = parseAexAux string token (left ++[x]++ right) []
                                         | otherwise = parseAexAux string x left (right++[token])
+
+parseStatement:: [String] -> Tree
+parseStatement string = Node "" Leaf Leaf
+
+parseAllStatements:: [String ]->Tree
+parseAllStatements string = Node "" Leaf Leaf
+
+parseIf:: [String ] -> Tree
+parseIf ("(":string )= Node "if" (parseAex cond ) (parseIfElse (drop n string))
+    where cond = inside string
+          n = length cond + 1
+
+parseIfElse:: [String] -> Tree
+parseIfElse ("then":"(":string) =Node "IfElse" (parseAllStatements code) (parseIfElse (drop n string))
+    where code = inside string
+          n = length code +1
+parseIfElse ("then":string) = Node "IfElse" (parseStatement code) (parseIfElse (drop n string))
+        where code = statement string
+              n = length code +1
+
+parseIfElse ("else":"(":string) = parseAllStatements code
+    where code = inside string
+
+parseIfElse ("else":string) = parseStatement (statement string)
+
+
+
 
 
 

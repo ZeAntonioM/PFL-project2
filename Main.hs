@@ -227,7 +227,7 @@ You should get an exception with the string: "Run-time error"
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 data Aexp = Num Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
 data Bexp = Bool Bool | EqE Aexp Aexp | LeE Aexp Aexp | NegE Bexp | AndE Bexp Bexp deriving Show
-data Stm = Aex Aexp | Bex Bexp | Assign String Aexp | Comp Stm Stm | If Bexp Stm Stm | While Bexp [Stm] deriving Show
+data Stm = Aex Aexp | Bex Bexp | Assign String Aexp | Seq Stm Stm | If Bexp Stm Stm | While Bexp [Stm] deriving Show
 type Program = [Stm]
 
 compA :: Aexp -> Code
@@ -249,7 +249,7 @@ compile [] = []
 compile (Aex a:rest) = compA a ++ compile rest
 compile (Bex b:rest) = compB b ++ compile rest
 compile (Assign x a:rest) = compA a ++ [Store x] ++ compile rest
-compile (Comp s1 s2:rest) = compile (s1:s2:rest)
+compile (Seq s1 s2:rest) = compile (s1:s2:rest)
 compile (If b s1 s2:rest) = compB b ++ [Branch (compile (s1:rest)) (compile (s2:rest))]
 compile (While b s:rest) = Loop (compB b) (compile s):compile rest
 
