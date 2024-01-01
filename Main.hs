@@ -252,7 +252,7 @@ compile [] = []
 compile ((Aex a):rest) = compA a ++ compile rest
 compile ((Bex b):rest) = compB b ++ compile rest
 compile ((Assign x a):rest) = compA a ++ [Store x] ++ compile rest
-compile ((If (Bex b) s1 s2):rest) = compB b ++ [Branch (compile s1) (compile s2)]
+compile ((If (Bex b) s1 s2):rest) = compB b ++ [Branch (compile s1) (compile s2)] ++ compile rest 
 compile ((While (Bex b) s):rest) = Loop (compB b) (compile s):compile rest
 
 parse :: String -> Program
@@ -347,6 +347,8 @@ parseTree (Node token left right)
 
 parseTree (Node token Leaf Leaf) 
     | isInteger token = [Aex(Number (stringToNumber token))]
+    | token == "True" = [Bex (Boolean True)]
+    | token == "False" = [Bex (Boolean False)]
     | otherwise = [Aex(Var token)]
           
 parseTree (Node _ _ _ ) = [Bex (Boolean True)]

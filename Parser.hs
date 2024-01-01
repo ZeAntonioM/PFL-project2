@@ -1,6 +1,7 @@
 module Parser where
 import Data.Char (isDigit)
 
+
 data Tree = Node String Tree Tree | Leaf  deriving Show
 
 stringToNumber :: String -> Integer
@@ -13,6 +14,15 @@ isInteger = all isDigit
 
 inside:: [String] -> [String]
 inside string = insideAux string 1
+
+ifCondition:: [String] -> [String]
+ifCondition ("(":string) = inside string
+ifCondition string = ifConditionAux string
+
+ifConditionAux:: [String] -> [String]
+ifConditionAux ("then":string) = []
+ifConditionAux (first:string) = first:ifConditionAux string
+
 
 insideAux:: [String] -> Integer -> [String]
 insideAux _ 0 = []
@@ -34,6 +44,7 @@ precedence "-" = 4
 precedence "<=" = 5
 precedence "==" = 6
 precedence "=" = 7
+precedence "and" = 8
 precedence _ = 1
 
 parseAex:: [String] -> Tree
@@ -55,9 +66,9 @@ parseAexAux (token:string) x left right | precedence token > precedence x = pars
 
 
 parseIf:: [String ] -> (Tree, [String])
-parseIf ("(":string )= (Node "if" (parseAex cond ) right,rest)
-    where cond = inside string
-          n = length cond + 1
+parseIf string= (Node "if" (parseAex cond ) right,rest)
+    where cond = ifCondition string
+          n = length cond + (if take 1 string == ["("] then 2 else 0)
           (right , rest) = parseIfElse (drop n string)
 
 parseIfElse:: [String] -> (Tree,[String])
