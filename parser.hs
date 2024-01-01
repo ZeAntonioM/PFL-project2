@@ -17,11 +17,12 @@ statement (x:string) = x:statement string
 
 precedence:: String -> Integer
 precedence [] = 0
-precedence "*" = 2
-precedence "+" = 3
-precedence "<=" = 4
-precedence "==" = 5
-precedence "=" = 6
+precedence "not" = 2
+precedence "*" = 3
+precedence "+" = 4
+precedence "<=" = 5
+precedence "==" = 6
+precedence "=" = 7
 precedence _ = 1
 
 parseAex:: [String] -> Tree
@@ -29,7 +30,7 @@ parseAex string = parseAexAux string [] [] []
 
 parseAexAux:: [String] -> String ->[String] ->[String] -> Tree
 parseAexAux ("(":string) token left right 
-    | length string == (n+1) =parseAexAux (take n string)  "" left right 
+    | (length string == (n+1)) && (token =="") =parseAexAux (take n string)  "" left right 
     | token=="" = parseAexAux (drop (n+1) string) "" (["("]++inside_++[")"]) right 
     | otherwise = parseAexAux (drop (n+1) string) token left (right ++ (["("]++inside_++[")"])) 
     where  inside_ = inside string
@@ -40,6 +41,8 @@ parseAexAux [] x left right = Node x (parseAexAux left [] [] []) (parseAexAux ri
 parseAexAux (token:string) "" left right = parseAexAux string token left right
 parseAexAux (token:string) x left right | precedence token > precedence x = parseAexAux string token (left ++[x]++ right) []
                                         | otherwise = parseAexAux string x left (right++[token])
+
+
 
 
 
