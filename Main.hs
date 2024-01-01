@@ -1,3 +1,5 @@
+module Main where
+import Parser ( stringToNumber,isInteger, parseStatements, Tree(..))
 import Data.Char
 -- Part 1
 data Inst =
@@ -124,7 +126,7 @@ execute Neg stack state
     first:rest = stack
 
 -- Instructions Add, Mult: pop two integer values from the stack, push their sum/product
-execute Add stack state = ( IntValue( x + y):stack', state) 
+execute Add stack state = ( IntValue( x + y):stack'', state) 
   where
     (IntValue x,IntValue y) = findFirst2Int stack
     stack' = removeFirst (IntValue x) stack
@@ -149,8 +151,8 @@ execute Sub stack state
 
 -- Instruction Equ: pop the first two values from the stack, push their equality if they are both integers or booleans
 execute Equ stack state
-  | length stack < 2 = error "Run-time error"
-  | ( isInt first && isBool second ) || ( isBool first && isInt second )  = error "Run-time error"
+  | length stack < 2 = error "Run-time error a"
+  | ( isInt first && isBool second ) || ( isBool first && isInt second )  = error "Run-time error b"
   | otherwise =
     ((if first == second then TT else FF):rest, state)
   where
@@ -225,36 +227,36 @@ You should get an exception with the string: "Run-time error"
 -- Part 2
  
 -- TODO: Define the types Aexp, Bexp, Stm and Program
-data Aexp = Num Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
-data Bexp = Bool Bool | EqE Aexp Aexp | LeE Aexp Aexp | NegE Bexp | AndE Bexp Bexp deriving Show
-data Stm = Aex Aexp | Bex Bexp | Assign String Aexp | Seq Stm Stm | If Bexp Stm Stm | While Bexp [Stm] deriving Show
+data Aexp = Number Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
+data Bexp = Boolean Bool | EqE Aexp Aexp | LeE Aexp Aexp | EqBexpE Bexp Bexp | NegE Bexp | AndE Bexp Bexp deriving Show
+data Stm = Aex Aexp | Bex Bexp | Assign String Aexp | Seq Stm Stm | If Stm [Stm] [Stm] | While Stm [Stm] deriving Show
 type Program = [Stm]
 
 compA :: Aexp -> Code
-compA (Num n) = [Push n]
+compA (Number n) = [Push n]
 compA (Var x) = [Fetch x]
 compA (AddE a1 a2) = compA a2 ++ compA a1 ++ [Add]
 compA (SubE a1 a2) = compA a2 ++ compA a1 ++ [Sub]
 compA (MultE a1 a2) = compA a2 ++ compA a1 ++ [Mult]
 
 compB :: Bexp -> Code
-compB (Bool b) = if b then [Tru] else [Fals]
+compB (Boolean b) = if b then [Tru] else [Fals]
 compB (EqE a1 a2) = compA a2 ++ compA a1 ++ [Equ]
+compB (EqBexpE a1 a2) = compB a2 ++ compB a1 ++ [Equ]
 compB (LeE a1 a2) = compA a2 ++ compA a1 ++ [Le]
 compB (NegE b) = compB b ++ [Neg]
 compB (AndE b1 b2) = compB b2 ++ compB b1 ++ [And]
 
 compile :: Program -> Code
 compile [] = []
-compile (Aex a:rest) = compA a ++ compile rest
-compile (Bex b:rest) = compB b ++ compile rest
-compile (Assign x a:rest) = compA a ++ [Store x] ++ compile rest
-compile (Seq s1 s2:rest) = compile (s1:s2:rest)
-compile (If b s1 s2:rest) = compB b ++ [Branch (compile (s1:rest)) (compile (s2:rest))]
-compile (While b s:rest) = Loop (compB b) (compile s):compile rest
+compile ((Aex a):rest) = compA a ++ compile rest
+compile ((Bex b):rest) = compB b ++ compile rest
+compile ((Assign x a):rest) = compA a ++ [Store x] ++ compile rest
+compile ((If (Bex b) s1 s2):rest) = compB b ++ [Branch (compile s1) (compile s2)]
+compile ((While (Bex b) s):rest) = Loop (compB b) (compile s):compile rest
 
 parse :: String -> Program
-parse = undefined -- TODO
+parse s = parseTree (parseStatements (lexer s) )
 
 lexer :: String -> [String]
 lexer [] = []
@@ -320,3 +322,33 @@ testParser programCode = (stack2Str stack, state2Str state)
 
 main :: IO ()
 main = undefined
+
+parseTree:: Tree -> Program
+parseTree (Node "Seq" left Leaf) = parseTree left
+parseTree (Node "Seq" left right) = parseTree left ++ parseTree right
+parseTree (Node "if" left (Node "IfElse" c1 c2)) = [ If cond (parseTree c1) (parseTree c2)] where cond:rest = parseTree left  
+parseTree (Node "while" left right) = [While cond (parseTree right)] where cond:rest = parseTree left 
+parseTree (Node ":=" (Node var Leaf Leaf) right) = [Assign var exp] where Aex exp:rest = parseTree right 
+parseTree (Node token left right) 
+    | token =="+" =[Aex(AddE first second) ] 
+    | token =="-" = [Aex(SubE first second) ] 
+    | token == "*" = [Aex(MultE first second) ] 
+    | token == "==" = [Bex(EqE first second) ] 
+    | token == "<=" = [Bex(LeE first second) ] 
+    where Aex first:rest = parseTree left
+          Aex second:rest2 = parseTree right
+
+parseTree (Node token left right) 
+    | token =="=" =[Bex(EqBexpE first second) ] 
+    | token =="not" =[Bex(NegE second) ] 
+    | token =="and" =[Bex(AndE first second) ] 
+    where Bex first:rest = parseTree left
+          Bex second:rest2 = parseTree right
+
+parseTree (Node token Leaf Leaf) 
+    | isInteger token = [Aex(Number (stringToNumber token))]
+    | otherwise = [Aex(Var token)]
+          
+parseTree (Node _ _ _ ) = [Bex (Boolean True)]
+
+

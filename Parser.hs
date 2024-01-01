@@ -1,5 +1,15 @@
+module Parser where
+import Data.Char (isDigit)
+
 data Tree = Node String Tree Tree | Leaf  deriving Show
 
+stringToNumber :: String -> Integer
+stringToNumber str = case reads str of
+  [(num, "")] -> num
+  _           -> error "Run time error"
+
+isInteger :: String -> Bool
+isInteger = all isDigit
 
 inside:: [String] -> [String]
 inside string = insideAux string 1
@@ -20,6 +30,7 @@ precedence [] = 0
 precedence "not" = 2
 precedence "*" = 3
 precedence "+" = 4
+precedence "-" = 4
 precedence "<=" = 5
 precedence "==" = 6
 precedence "=" = 7
@@ -60,7 +71,7 @@ parseIfElse ("then":string) = (Node "IfElse" (parseStatements code) right, rest)
               (right , rest) = parseIfElse (drop n string)
 parseIfElse ("else":"(":string) = (parseStatements code, drop n string) 
     where code = inside string
-          n = length code +1
+          n = length code +2
 
 parseIfElse ("else":string) = (parseStatements code,drop n string)
         where code = statement string ++ [";"]
@@ -83,14 +94,12 @@ parseWhile ("(":string) = (Node "while" exp right, rest)
 
 parseWhile ("do":"(":string) = (parseStatements code, drop n string)
     where code = inside string
-          n = length code +1
+          n = length code +2
 
 parseWhile ("do":string) = (parseStatements code, drop n string)
     where code = statement string ++ [";"]
           n = length code
           
-
-
 
 parseStatements:: [String] -> Tree
 parseStatements [] = Leaf
