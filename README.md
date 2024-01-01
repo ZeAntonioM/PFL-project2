@@ -73,6 +73,8 @@ Defined all the types and the Values, we started to implement the functions.
 
 - `removeKey`: Since we needed to update the state, we needed to remove the old pair of the state, because we can't have two pairs with the same variable name. To do so, we recursively go through the list, and for each tuple, we check if the variable name is equal to the key we want to remove. If so, we return the rest of the list. If not, we add the tuple to the rest of the list.
 
+Concluding, we can run the machine with the `run` function, which receives a state and returns a different state that is the result of the execution of the instructions with the function `execute`. The `execute` function receives an instruction, a stack and a state, and returns a tuple with the updated stack and state. The `execute` function is implemented with a different procedure for each instruction, and each of those functions returns the updated stack and state.
+
 ### Part 1 - Testing
 
 To test the implementation, we used the `testAssembler` function given, and it worked as expected.
@@ -100,8 +102,51 @@ In this part, we were able to understand properly how the low-level machine work
 
 ### Part 2 - Implementation
 
+Now that we had the low-level machine implemented, we needed to do a compiler that would translate a program written in a high-level language into a low-level machine program. To do so, we needed to implement a lexer, a parser and a compiler. We also needed to define some data types to represent the different types of expressions and instructions: 
 
+- `Aexp`: This data type represents the arithmetic expressions. It can be either: 
+  - `Num` Integer -> Represents a number.
+  - `Var` String -> Represents a variable.
+  - `AddE` Aexp Aexp -> Represents an addition of two arithmetic expressions.
+  - `SubE` Aexp Aexp -> Represents a subtraction of two arithmetic expressions.
+  - `MultE` Aexp Aexp -> Represents a multiplication of two arithmetic expressions.
+- `Bexp`: This data type represents the boolean expressions. It can be either:
+  - `Bool` Bool -> Represents a boolean value.
+  - `EqE` Aexp Aexp -> Represents the equality of two arithmetic expressions.
+  - `LeE` Aexp Aexp -> Represents the lower or equal of two arithmetic expressions.
+  - `NegE` Bexp -> Represents the negation of a boolean expression.
+  - `AndE` Bexp Bexp -> Represents the conjunction of two boolean expressions.
+- `Stm`: This data type represents the statements. It can be either:
+  - `Aex` Aexp -> Represents an arithmetic expression.
+  - `Bex` Bexp -> Represents a boolean expression.
+  - `Assign` String Aexp -> Represents an assignment of an arithmetic expression to a variable.
+  - `If` Bexp Stm Stm -> Represents an if statement.
+  - `While` Bexp [Stm] -> Represents a while statement.
 
+We also defined a type `Program` which is a list of statements.
+
+Now that we had the types defined, we started to implement the lexer, the parser and the compiler.
+
+The `lexer` is responsible for transforming a string into a list of tokens. To do so, we read a character at a time, and for each character we decided what to do with guards. The guards we used were the following:
+
+- If the character is a ";", "(", ")", "+", "-" or "*" we add it to the list of tokens.
+- If the character is a "=", we check if the next character is a "=" or not. If it is, we add the token "==" to the list of tokens. If not, we add the token "=" to the list of tokens.
+- If the character and the next character are ":=" or "<=" we add the token to the list of tokens.
+- If the character is a "¬" we add the token "not" to the list of tokens.
+- If the character is a Number, we get the whole number from the string using the auxiliary function `getInt` and add it to the list of tokens. This function just reads the string until it finds a character that is not a number, and returns the number.
+- If the character is a letter, we get the whole word from the string using the auxiliary function `getWord` and add it to the list of tokens. This function just reads the string until it finds a character that is not a letter, and returns the word.
+- If the character is a space, we just ignore it.
+- Otherwise, we return an error.
+
+The `compiler` is responsible for transforming a program into code that can be executed by the low-level machine. We have defined a function called `compile` that receives a program and returns Code, a function called `compA` that receives an arithmetic expression and returns Code, and a function called `compB` that receives a boolean expression and returns Code. The `compile` function is implemented with a different procedure for each statement: 
+
+- `Aex`: For this statement, we just call the `compA` function with the arithmetic expression and add the result to the rest of the code.
+- `Bex`: For this statement, we just call the `compB` function with the boolean expression and add the result to the rest of the code.
+- `Assign`: For this statement, we first call the `compA` function with the arithmetic expression, add it to a `Store` instruction with the variable name, and add it to the rest of the code.
+- `If`: For this statement, we first call the `compB` function with the boolean expression, add it to a `Branch` instruction with the code of the first statement and the code of the second statement, and add it to the rest of the code.
+- `While`: For this statement, we just add a `Loop` instruction that receives the `compB` of the boolean expression and the `compile` of the list of statements, and add it to the rest of the code.
+
+With this, we were able to transform a string into code to be executed by the low-level machine.
 
 ### Part 2 - Testing
 
@@ -116,3 +161,9 @@ To test the lexer function, we used the arguments of the tests given, and it wor
 
 
 ### Part 2 - Conclusion
+
+In this part, we were able to start understanding how to implement a compiler. It was interesting to see how the lexer, the parser and the compiler worked, since we are just used to write the code without being aware of what happens behind the scenes. It was a difficult part of the work, mainly because there are a lot of different cases and rules to consider, and it was hard to understand how to implement them.
+
+## Conclusion
+
+In conclusion, we were able to implement a low-level machine and a compiler. It was a very interesting work, because we were able to understand how the low-level machine works, and how to implement it. We were also able to understand how to implement a compiler, and how to use the lexer and the parser. It was a difficult work, mainly because there are a lot of different cases and rules to consider, and it was hard to understand how to implement them. We were able to implement all the functions and the tests, and we were able to understand how to use the auxiliary functions to make the code more readable and easier to implement. This practical work was very important to develop our skills in Haskell, and to understand how to implement a low-level machine and a compiler. We consider that we were able to achieve the goals of the work, and we are satisfied with the final result. 
