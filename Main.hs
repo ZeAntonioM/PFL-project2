@@ -227,7 +227,7 @@ You should get an exception with the string: "Run-time error"
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 data Aexp = Num Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
 data Bexp = Bool Bool | EqE Aexp Aexp | LeE Aexp Aexp | NegE Bexp | AndE Bexp Bexp deriving Show
-data Stm = Assign String Aexp | Comp Stm Stm | If Bexp Stm Stm | While Bexp Stm deriving Show
+data Stm = Assign String Aexp | Comp Stm Stm | If Bexp Stm Stm | While Bexp [Stm]1 deriving Show
 type Program = [Stm]
 
 compA :: Aexp -> Code
