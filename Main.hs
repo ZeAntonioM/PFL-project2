@@ -1,68 +1,11 @@
 module Main where
-import Parser ( stringToNumber,isInteger, parseStatements, Tree(..))
+import Parser ( parseTree, parseStatements)
+import Lexer (lexer)
+import Header
+import Utils
 import Data.Char
 -- Part 1
-data Inst =
-  Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
-  Branch Code Code | Loop Code Code
-  deriving Show
-type Code = [Inst]
 
-data Value = IntValue Integer | TT | FF deriving (Eq, Show, Ord)
-type Stack  =  [Value]
-type State =  [(String, Value)] 
-
--- Function to check if a value is an integer
-isInt :: Value -> Bool
-isInt (IntValue _) = True
-isInt _ = False
-
--- Function to check if a value is a boolean
-isBool :: Value -> Bool
-isBool TT = True
-isBool FF = True
-isBool _ = False
-
-
--- Function to remove the first occurrence of a pair with a key from a list 
-removeKey::Eq a => String -> [(String, a)] -> [(String, a)] 
-removeKey _ [] = []  -- Base case: empty list, nothing to remove
-removeKey key ((k,value):ys)
-  | key == k    = ys    -- Found the element, skip it
-  | otherwise = (k,value) : removeKey key ys  -- Keep the current element and continue with the rest of the list
-
--- Function to remove the first occurrence of an element from a list
-removeFirst :: Eq a => a -> [a] -> [a]
-removeFirst _ [] = []  -- Base case: empty list, nothing to remove
-removeFirst x (y:ys)
-  | x == y    = ys    -- Found the element, skip it
-  | otherwise = y : removeFirst x ys  -- Keep the current element and continue with the rest of the list
-
--- Function to find the value that corresponds to a key in state
-findValueFromKey:: String -> State -> Value
-findValueFromKey _ [] = error "Run-time error"
-findValueFromKey key ((k,value):rest)
-  | key == k =value
-  | otherwise = findValueFromKey key rest
-  
--- Function to transform a value into a string
-value2Str :: Value -> String
-value2Str value = case value of
-  IntValue n -> show n
-  TT -> "True"
-  FF -> "False"
-
--- Function to transform a pair of a variable and a value into a string
-pair2Str :: ([Char], Value) -> [Char]
-pair2Str (var, value) = var ++ "=" ++ value2Str value
-
--- Function to sort the state using quicksort
-stateSort :: State -> State
-stateSort [] = []
-stateSort ((key,value):xs) = stateSort lower ++ [(key,value)] ++ stateSort higher
-  where 
-    lower = [(x,y) | (x,y)<-xs, x<=key] 
-    higher = [(x,y) | (x,y)<-xs, x>key]
 
 -- Function to create an empty stack
 createEmptyStack :: Stack
@@ -77,13 +20,6 @@ stack2Str (value:rest) = value2Str value ++ "," ++ stack2Str rest
 -- Function to create an empty state
 createEmptyState :: State
 createEmptyState = []
-
--- Function to find the first two integers in a stack
-findFirst2Int :: Stack -> (Value, Value)
-findFirst2Int stack = (first, second)
-  where 
-    aux = [y | y<- stack ,y /= TT && y /=FF ] 
-    [first,second] =take 2 aux 
 
 -- Function to transform a state into a string
 state2Str :: State -> String
@@ -151,8 +87,8 @@ execute Sub stack state
 
 -- Instruction Equ: pop the first two values from the stack, push their equality if they are both integers or booleans
 execute Equ stack state
-  | length stack < 2 = error "Run-time error a"
-  | ( isInt first && isBool second ) || ( isBool first && isInt second )  = error "Run-time error b"
+  | length stack < 2 = error "Run-time error"
+  | ( isInt first && isBool second ) || ( isBool first && isInt second )  = error "Run-time error"
   | otherwise =
     ((if first == second then TT else FF):rest, state)
   where
@@ -227,10 +163,7 @@ You should get an exception with the string: "Run-time error"
 -- Part 2
  
 -- TODO: Define the types Aexp, Bexp, Stm and Program
-data Aexp = Number Integer | Var String | AddE Aexp Aexp | SubE Aexp Aexp | MultE Aexp Aexp deriving Show
-data Bexp = Boolean Bool | EqE Aexp Aexp | LeE Aexp Aexp | EqBexpE Bexp Bexp | NegE Bexp | AndE Bexp Bexp deriving Show
-data Stm = Aex Aexp | Bex Bexp | Assign String Aexp | Seq Stm Stm | If Stm [Stm] [Stm] | While Stm [Stm] deriving Show
-type Program = [Stm]
+
 
 compA :: Aexp -> Code
 compA (Number n) = [Push n]
@@ -258,48 +191,6 @@ compile ((While (Bex b) s):rest) = Loop (compB b) (compile s):compile rest
 parse :: String -> Program
 parse s = parseTree (parseStatements (lexer s) )
 
-lexer :: String -> [String]
-lexer [] = []
-lexer (x:xs)
-  | x == ';' = ";" : lexer xs 
-  | x == '(' = "(" : lexer xs
-  | x == ')' = ")" : lexer xs
-  | x == '+' = "+" : lexer xs
-  | x == '-' = "-" : lexer xs
-  | x == '*' = "*" : lexer xs
-  | x == '=' = if lexer (take 1 xs)  == ["="] then "==":lexer (drop 1 xs) else "=" : lexer xs
-  | x:take 1 xs == ":=" = ":=" : lexer (drop 1 xs)
-  | x:take 1 xs == "<=" = "<=" : lexer (drop 1 xs)
-  | x == '¬' = "not" : lexer xs
-  | isNumber x = number : lexer (drop (length number - 1) xs) 
-  | isLetter x = word : lexer (drop (length word - 1) xs)
-  | isSpace x = lexer xs
-  | otherwise = error "Run-time error"
-    where
-      number = getInt (x:xs) 
-      word = getWord (x:xs)
-
-getInt :: String -> String
-getInt [] = []
-getInt (x:xs)
-  | x == '0' = x : getInt xs
-  | x == '1' = x : getInt xs
-  | x == '2' = x : getInt xs
-  | x == '3' = x : getInt xs
-  | x == '4' = x : getInt xs
-  | x == '5' = x : getInt xs
-  | x == '6' = x : getInt xs
-  | x == '7' = x : getInt xs
-  | x == '8' = x : getInt xs
-  | x == '9' = x : getInt xs
-  | otherwise = []
-
-getWord :: String -> String
-getWord [] = []
-getWord (x:xs)
-  | isLetter x = x : getWord xs
-  | otherwise = []
-
 -- To help you test your parser
 testParser :: String -> (String, String)
 testParser programCode = (stack2Str stack, state2Str state)
@@ -323,34 +214,7 @@ testParser programCode = (stack2Str stack, state2Str state)
 main :: IO ()
 main = undefined
 
-parseTree:: Tree -> Program
-parseTree (Node "Seq" left Leaf) = parseTree left
-parseTree (Node "Seq" left right) = parseTree left ++ parseTree right
-parseTree (Node "if" left (Node "IfElse" c1 c2)) = [ If cond (parseTree c1) (parseTree c2)] where cond:rest = parseTree left  
-parseTree (Node "while" left right) = [While cond (parseTree right)] where cond:rest = parseTree left 
-parseTree (Node ":=" (Node var Leaf Leaf) right) = [Assign var exp] where Aex exp:rest = parseTree right 
-parseTree (Node token left right) 
-    | token =="+" =[Aex(AddE first second) ] 
-    | token =="-" = [Aex(SubE first second) ] 
-    | token == "*" = [Aex(MultE first second) ] 
-    | token == "==" = [Bex(EqE first second) ] 
-    | token == "<=" = [Bex(LeE first second) ] 
-    where Aex first:rest = parseTree left
-          Aex second:rest2 = parseTree right
 
-parseTree (Node token left right) 
-    | token =="=" =[Bex(EqBexpE first second) ] 
-    | token =="not" =[Bex(NegE second) ] 
-    | token =="and" =[Bex(AndE first second) ] 
-    where Bex first:rest = parseTree left
-          Bex second:rest2 = parseTree right
-
-parseTree (Node token Leaf Leaf) 
-    | isInteger token = [Aex(Number (stringToNumber token))]
-    | token == "True" = [Bex (Boolean True)]
-    | token == "False" = [Bex (Boolean False)]
-    | otherwise = [Aex(Var token)]
           
-parseTree (Node _ _ _ ) = [Bex (Boolean True)]
 
 

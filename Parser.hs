@@ -1,40 +1,29 @@
 module Parser where
-import Data.Char (isDigit)
+import Header
+import Utils (inside, stringToNumber, isInteger, statement)
 
 
-data Tree = Node String Tree Tree | Leaf  deriving Show
-
-stringToNumber :: String -> Integer
-stringToNumber str = case reads str of
-  [(num, "")] -> num
-  _           -> error "Run time error"
-
-isInteger :: String -> Bool
-isInteger = all isDigit
-
-inside:: [String] -> [String]
-inside string = insideAux string 1
-
+-- Function to extract the if condition from the if statement
 ifCondition:: [String] -> [String]
 ifCondition ("(":string) = inside string
 ifCondition string = ifConditionAux string
 
+-- Auxiliar function to extract the if condition from the if statement when the condition is not inside brackets
 ifConditionAux:: [String] -> [String]
 ifConditionAux ("then":string) = []
 ifConditionAux (first:string) = first:ifConditionAux string
 
+-- Function to extract the while condition from the while
+whileCondition:: [String] -> [String]
+whileCondition ("(":string) = inside string
+whileCondition string = whileConditionAux string
 
-insideAux:: [String] -> Integer -> [String]
-insideAux _ 0 = []
-insideAux ("(":string) n = "(": insideAux string (n+1)
-insideAux (")":string) 1 = []
-insideAux (")":string) n = ")": insideAux string (n-1)
-insideAux (x:string) n = x:insideAux string n
+-- Auxiliar function to extract the while condition from the while statement when the condition is not inside brackets
+whileConditionAux:: [String] -> [String]
+whileConditionAux ("do":string) = []
+whileConditionAux (first:string) = first:whileConditionAux string
 
-statement:: [String] -> [String] 
-statement (";":string) = []
-statement (x:string) = x:statement string
-
+-- Function to calculate the level of precedence of a token
 precedence:: String -> Integer
 precedence [] = 0
 precedence "not" = 2
@@ -47,9 +36,11 @@ precedence "=" = 7
 precedence "and" = 8
 precedence _ = 1
 
+--- Function to parse an arithemetic or bolean expression and trasform it into a binary tree 
 parseAex:: [String] -> Tree
 parseAex string = parseAexAux string [] [] []
 
+-- Auxaliry function to parse an arithemetic or bolean expression and trasform it into a binary tree 
 parseAexAux:: [String] -> String ->[String] ->[String] -> Tree
 parseAexAux ("(":string) token left right 
     | (length string == (n+1)) && (token =="") =parseAexAux (take n string)  "" left right 
@@ -64,13 +55,14 @@ parseAexAux (token:string) "" left right = parseAexAux string token left right
 parseAexAux (token:string) x left right | precedence token > precedence x = parseAexAux string token (left ++[x]++ right) []
                                         | otherwise = parseAexAux string x left (right++[token])
 
-
+-- Function to parse an If statement and trasform it into a binary tree 
 parseIf:: [String ] -> (Tree, [String])
 parseIf string= (Node "if" (parseAex cond ) right,rest)
     where cond = ifCondition string
           n = length cond + (if take 1 string == ["("] then 2 else 0)
           (right , rest) = parseIfElse (drop n string)
 
+-- Auxiliar Function to parse the code to be executed in both the if and else condition and trasform it into a binary tree
 parseIfElse:: [String] -> (Tree,[String])
 parseIfElse ("then":"(":string) =(Node "IfElse" (parseStatements code) right, rest)
     where code = inside string
@@ -88,21 +80,15 @@ parseIfElse ("else":string) = (parseStatements code,drop n string)
         where code = statement string ++ [";"]
               n = length code 
 
+-- Function to extract to parse and Assign statement and trasform it into a binary tree
 parseAssign:: String -> [String] -> (Tree, [String])
 parseAssign var string = (Node ":=" (Node var Leaf Leaf) exp, rest) 
     where stm =  statement string
           exp = parseAex stm
           rest = drop (length stm +1) string
 
+-- Function to extract to parse and While statement and trasform it into a binary tree
 parseWhile:: [String] -> (Tree, [String])
-parseWhile ("(":string) = (Node "while" exp right, rest)
-    where cond = inside string
-          exp = parseAex cond
-          n = length cond +1
-          code = drop n string
-          (right, rest) = parseWhile code
-
-
 parseWhile ("do":"(":string) = (parseStatements code, drop n string)
     where code = inside string
           n = length code +2
@@ -110,8 +96,15 @@ parseWhile ("do":"(":string) = (parseStatements code, drop n string)
 parseWhile ("do":string) = (parseStatements code, drop n string)
     where code = statement string ++ [";"]
           n = length code
-          
 
+parseWhile string = (Node "while" exp right, rest)
+    where cond = whileCondition string
+          exp = parseAex cond
+          n = length cond + (if take 1 string == ["("] then 2 else 0)
+          code = drop n string
+          (right, rest) = parseWhile code
+
+-- Function to parse all the statements from a string and transform them into a binary tree
 parseStatements:: [String] -> Tree
 parseStatements [] = Leaf
 parseStatements ("if":string) = Node "Seq" left (parseStatements rest) where (left, rest) = parseIf string
@@ -123,6 +116,34 @@ parseStatements string = Node "Seq" left (parseStatements rest)
           rest = drop (length stm +1) string
 
 
+-- Function to transform a binary tree into a list of statements that can be interpret but the compiler
+parseTree:: Tree -> Program
+parseTree (Node "Seq" left Leaf) = parseTree left
+parseTree (Node "Seq" left right) = parseTree left ++ parseTree right
+parseTree (Node "if" left (Node "IfElse" c1 c2)) = [ If cond (parseTree c1) (parseTree c2)] where cond:rest = parseTree left  
+parseTree (Node "while" left right) = [While cond (parseTree right)] where cond:rest = parseTree left 
+parseTree (Node ":=" (Node var Leaf Leaf) right) = [Assign var exp] where Aex exp:rest = parseTree right 
+parseTree (Node token left right) 
+    | token =="+" =[Aex(AddE first second) ] 
+    | token =="-" = [Aex(SubE first second) ] 
+    | token == "*" = [Aex(MultE first second) ] 
+    | token == "==" = [Bex(EqE first second) ] 
+    | token == "<=" = [Bex(LeE first second) ] 
+    where Aex first:rest = parseTree left
+          Aex second:rest2 = parseTree right
+
+parseTree (Node token left right) 
+    | token =="=" =[Bex(EqBexpE first second) ] 
+    | token =="not" =[Bex(NegE second) ] 
+    | token =="and" =[Bex(AndE first second) ] 
+    where Bex first:rest = parseTree left
+          Bex second:rest2 = parseTree right
+
+parseTree (Node token Leaf Leaf) 
+    | isInteger token = [Aex(Number (stringToNumber token))]
+    | token == "True" = [Bex (Boolean True)]
+    | token == "False" = [Bex (Boolean False)]
+    | otherwise = [Aex(Var token)]
 
 
 
