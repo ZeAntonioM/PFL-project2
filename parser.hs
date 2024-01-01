@@ -1,5 +1,5 @@
-
 data Tree = Node String Tree Tree | Leaf  deriving Show
+
 
 inside:: [String] -> [String]
 inside string = insideAux string 1
@@ -42,29 +42,65 @@ parseAexAux (token:string) "" left right = parseAexAux string token left right
 parseAexAux (token:string) x left right | precedence token > precedence x = parseAexAux string token (left ++[x]++ right) []
                                         | otherwise = parseAexAux string x left (right++[token])
 
-parseStatement:: [String] -> Tree
-parseStatement string = Node "" Leaf Leaf
 
-parseAllStatements:: [String ]->Tree
-parseAllStatements string = Node "" Leaf Leaf
-
-parseIf:: [String ] -> Tree
-parseIf ("(":string )= Node "if" (parseAex cond ) (parseIfElse (drop n string))
+parseIf:: [String ] -> (Tree, [String])
+parseIf ("(":string )= (Node "if" (parseAex cond ) right,rest)
     where cond = inside string
           n = length cond + 1
+          (right , rest) = parseIfElse (drop n string)
 
-parseIfElse:: [String] -> Tree
-parseIfElse ("then":"(":string) =Node "IfElse" (parseAllStatements code) (parseIfElse (drop n string))
+parseIfElse:: [String] -> (Tree,[String])
+parseIfElse ("then":"(":string) =(Node "IfElse" (parseStatements code) right, rest)
     where code = inside string
           n = length code +1
-parseIfElse ("then":string) = Node "IfElse" (parseStatement code) (parseIfElse (drop n string))
-        where code = statement string
-              n = length code +1
-
-parseIfElse ("else":"(":string) = parseAllStatements code
+          (right , rest) = parseIfElse (drop n string)
+parseIfElse ("then":string) = (Node "IfElse" (parseStatements code) right, rest)
+        where code = statement string ++ [";"]
+              n = length code
+              (right , rest) = parseIfElse (drop n string)
+parseIfElse ("else":"(":string) = (parseStatements code, drop n string) 
     where code = inside string
+          n = length code +1
 
-parseIfElse ("else":string) = parseStatement (statement string)
+parseIfElse ("else":string) = (parseStatements code,drop n string)
+        where code = statement string ++ [";"]
+              n = length code 
+
+parseAssign:: String -> [String] -> (Tree, [String])
+parseAssign var string = (Node ":=" (Node var Leaf Leaf) exp, rest) 
+    where stm =  statement string
+          exp = parseAex stm
+          rest = drop (length stm +1) string
+
+parseWhile:: [String] -> (Tree, [String])
+parseWhile ("(":string) = (Node "while" exp right, rest)
+    where cond = inside string
+          exp = parseAex cond
+          n = length cond +1
+          code = drop n string
+          (right, rest) = parseWhile code
+
+
+parseWhile ("do":"(":string) = (parseStatements code, drop n string)
+    where code = inside string
+          n = length code +1
+
+parseWhile ("do":string) = (parseStatements code, drop n string)
+    where code = statement string ++ [";"]
+          n = length code
+          
+
+
+
+parseStatements:: [String] -> Tree
+parseStatements [] = Leaf
+parseStatements ("if":string) = Node "Seq" left (parseStatements rest) where (left, rest) = parseIf string
+parseStatements ("while":string) =  Node "Seq" left (parseStatements rest) where (left, rest) = parseWhile string
+parseStatements (var:":=":string) = Node "Seq" left (parseStatements rest) where (left, rest) = parseAssign var string
+parseStatements string = Node "Seq" left (parseStatements rest) 
+    where stm = statement string
+          left = parseAex stm
+          rest = drop (length stm +1) string
 
 
 
