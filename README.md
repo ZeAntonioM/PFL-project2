@@ -202,15 +202,10 @@ Once that was done we implemented a function called `ParseAex` that initializes 
 At the first iteration the token at the beginning of the list is set as the current Node, then every time the function reads a token it compares its precedence with the current node, if the precedence of the new token is lower or equal to the precedence of the Node it simply adds the new token to the right of the current token, however, if the precedence is higher the new Token becomes the Node and both the old token and the right list are appended to the left.
 Once the list of tokens is empty both the left and right lists are recursively processed, and a Tree is created with the current node and the resulting left and right Trees.
 
-Example : 1+6 == 7
-
-![ex1](/img/ex1.png)
 
 After this, the only thing left in this part was to deal with brackets. For that every time a token"(" was read the contents inside it were added to the left or right list without being processed, only processing its content once the list of tokens contained only the content inside the brackets. This way we ensured that everything inside the brackets were always at the end of the tree, thus being the first to be processed.
 
-Example: (1+3)*7
 
-![ex2](/img/ex2.png)
 
 #### Parsing of statements
 
@@ -218,31 +213,18 @@ For this part, we simply created a function `parseStatements` that iterates thro
 For the "If" token it calls the `parseIf` function that sets the node to "if"
 parses the condition expression and sets it to its left branch, and then for the right branch it calls the function `parseIfElse` which will create another Tree with the Node set as "IfElse" and with the left and right branches containing the results of the parsing code of the if and else statement respectively.
 
-Example: if(True) then x else y
-
-![ex3](/img/ex3.png)
-
 For the "While" token it calls the `parseWhile` function which similar to the  `parseIf` function parses the condition and sets it to the left branch, while the code to be executed is parsed and set to the right branch
 
-Example: while(True) do x
-
-![ex4](/img/ex4.png)
 
 For the ":=" token it calls the `parseAssign` function that sets the variable to the left branch and the parsed arithmetic expression on the right branch
 
-Example:  x:= 3+5;
-
-![ex5](/img/ex5.png)
 
 Anything else it considers an arithmetic expression.
-Example :
-Ex 3+5;
 
 To group instructions in the binary Tree the function `parseStatement` will always create a Tree with the node set to "Seq" and with one statement in the left branch and either another "Seq" tree when there are more instructions to execute or a Leaf otherwise.
 
-Example:  if(x) then (x y) else (z)
 
-![ex5](/img/ex5.png)
+
 
 #### Parsing of The Binary Tree
 
