@@ -1,7 +1,7 @@
 module Lexer where
 import Data.Char
 
--- Function to trasform a string in a list of tokens
+-- Function to transform a string in a list of tokens
 lexer :: String -> [String]
 lexer [] = []
 lexer (x:xs)

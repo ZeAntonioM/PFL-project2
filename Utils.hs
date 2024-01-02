@@ -74,7 +74,7 @@ isInteger = all isDigit
 inside:: [String] -> [String]
 inside string = insideAux string 1
 
--- Auxiliar function to extract the contents inside of brackets
+-- Auxiliary function to extract the contents inside of brackets
 insideAux:: [String] -> Integer -> [String]
 insideAux _ 0 = []
 insideAux ("(":string) n = "(": insideAux string (n+1)

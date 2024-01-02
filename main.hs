@@ -1,11 +1,13 @@
 module Main where
+
 import Parser ( parseTree, parseStatements)
 import Lexer (lexer)
 import Header
 import Utils
 import Data.Char
--- Part 1
 
+
+-- Part 1
 
 -- Function to create an empty stack
 createEmptyStack :: Stack
@@ -30,8 +32,6 @@ state2StrAux :: [([Char], Value)] -> [Char]
 state2StrAux [] = ""
 state2StrAux [curr] = pair2Str curr
 state2StrAux  (curr:rest) = pair2Str curr ++ "," ++ state2Str rest
-
-
 
 -- Function to execute an instruction
 execute :: Inst -> Stack -> State -> (Stack, State)
@@ -162,32 +162,33 @@ You should get an exception with the string: "Run-time error"
 
 -- Part 2
  
--- TODO: Define the types Aexp, Bexp, Stm and Program
-
-
+-- Function to transform an arithmetic expression into code
 compA :: Aexp -> Code
-compA (Number n) = [Push n]
-compA (Var x) = [Fetch x]
-compA (AddE a1 a2) = compA a2 ++ compA a1 ++ [Add]
-compA (SubE a1 a2) = compA a2 ++ compA a1 ++ [Sub]
-compA (MultE a1 a2) = compA a2 ++ compA a1 ++ [Mult]
+compA (Number n) = [Push n] -- If the expression is a number, returns the instruction Push n
+compA (Var x) = [Fetch x] -- If the expression is a variable, returns the instruction Fetch x
+compA (AddE a1 a2) = compA a2 ++ compA a1 ++ [Add] -- If the expression is an addition, returns the compiled code of the second expression, then the first expression, then the instruction Add
+compA (SubE a1 a2) = compA a2 ++ compA a1 ++ [Sub] -- If the expression is a subtraction, returns the compiled code of the second expression, then the first expression, then the instruction Sub
+compA (MultE a1 a2) = compA a2 ++ compA a1 ++ [Mult] -- If the expression is a multiplication, returns the compiled code of the second expression, then the first expression, then the instruction Mult
 
+-- Function to transform a boolean expression into code
 compB :: Bexp -> Code
-compB (Boolean b) = if b then [Tru] else [Fals]
-compB (EqE a1 a2) = compA a2 ++ compA a1 ++ [Equ]
-compB (EqBexpE a1 a2) = compB a2 ++ compB a1 ++ [Equ]
-compB (LeE a1 a2) = compA a2 ++ compA a1 ++ [Le]
-compB (NegE b) = compB b ++ [Neg]
-compB (AndE b1 b2) = compB b2 ++ compB b1 ++ [And]
+compB (Boolean b) = if b then [Tru] else [Fals] -- If the expression is a boolean, returns the instruction Tru if it is True, Fals otherwise
+compB (EqE a1 a2) = compA a2 ++ compA a1 ++ [Equ] -- If the expression is an arithmetic equality, returns the compiled code of the second expression, then the first expression, then the instruction Equ
+compB (EqBexpE a1 a2) = compB a2 ++ compB a1 ++ [Equ] -- If the expression is an boolean equality, returns the compiled code of the second expression, then the first expression, then the instruction Equ
+compB (LeE a1 a2) = compA a2 ++ compA a1 ++ [Le] -- If the expression is an arithmetic less than or equal, returns the compiled code of the second expression, then the first expression, then the instruction Le
+compB (NegE b) = compB b ++ [Neg] -- If the expression is a negation, returns the compiled code of the expression, then the instruction Neg
+compB (AndE b1 b2) = compB b2 ++ compB b1 ++ [And] -- If the expression is a conjunction, returns the compiled code of the second expression, then the first expression, then the instruction And
 
+-- Function to transform a statement into code
 compile :: Program -> Code
-compile [] = []
-compile ((Aex a):rest) = compA a ++ compile rest
-compile ((Bex b):rest) = compB b ++ compile rest
-compile ((Assign x a):rest) = compA a ++ [Store x] ++ compile rest
-compile ((If (Bex b) s1 s2):rest) = compB b ++ [Branch (compile s1) (compile s2)] ++ compile rest 
-compile ((While (Bex b) s):rest) = Loop (compB b) (compile s):compile rest
+compile [] = [] -- If the program is empty, returns an empty list
+compile ((Aex a):rest) = compA a ++ compile rest -- If the first element is an arithmetic expression, returns the compiled code of the expression and the compiled code of the rest of the program
+compile ((Bex b):rest) = compB b ++ compile rest -- If the first element is a boolean expression, returns the compiled code of the expression and the compiled code of the rest of the program
+compile ((Assign x a):rest) = compA a ++ [Store x] ++ compile rest -- If the first element is an assignment, returns the compiled code of the arithmetic expression, the instruction Store x and the compiled code of the rest of the program
+compile ((If (Bex b) s1 s2):rest) = compB b ++ [Branch (compile s1) (compile s2)] ++ compile rest -- If the first element is an if statement, returns the compiled code of the boolean expression, the instruction Branch, that receives the compiled code of the first statement and the compiled code of the second statement, and the compiled code of the rest of the program 
+compile ((While (Bex b) s):rest) = Loop (compB b) (compile s):compile rest -- If the first element is a while statement, returns the instruction Loop, that receives the compiled code of the boolean expression and the compiled code of the statement, and the compiled code of the rest of the program
 
+-- Function to transform a string into a Program
 parse :: String -> Program
 parse s = parseTree (parseStatements (lexer s) )
 
