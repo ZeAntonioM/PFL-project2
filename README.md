@@ -14,24 +14,29 @@ To complete this project we used the template file given by us via Moodle and st
 The main objective of this section was to develop a low-level machine capable of executing a given configuration (c, e, s), where c represents the configuration, e represents the evaluation stack, and s represents the storage. We were provided with a template file that included a data type for instructions and four essential functions that needed implementation: createEmptyStack, stack2String, createEmptyState, state2String, and run.
 
 ## Data Types Definition
+
 ### Value
+
 To represent the possible types stored inside the stack and storage, we introduced the Value data type, which could be either an integer (IntValue) or a boolean (TT for true, FF for false).
+
 ### Stack and State
+
 Understanding the roles of the evaluation stack and storage, we defined two types - Stack (a list of Values) and State (a list of variable-value pairs represented by strings and Values).
 
 ## Initial Functions
 
 Once all data types that were going to be used for this part were defined we started working on the functions to implement. Firstly we implemented  the following 4 initial functions:
-createEmptyStack: This function generates an empty stack, to initialize the evaluation stack. To do this it simply returns an empty list 
-createEmptyState: Similar to createEmptyStack, this function creates an empty state to initialize the machine state.
-stack2Str: This function converts the stack into a string, it recursively traverses the stack, transforming each Value into a string using the value2Str auxiliary function. The resulting strings are then concatenated with commas.
-state2Str:  This function orders the state alphabetically and then converts it into a string, It does this by using the `stateSort` and the `state2StrAux auxiliary function.
+
+- `createEmptyStack`: This function generates an empty stack, to initialize the evaluation stack. To do this it simply returns an empty list.  
+- `createEmptyState`: Similar to createEmptyStack, this function creates an empty state to initialize the machine state.  
+- `stack2Str`: This function converts the stack into a string, it recursively traverses the stack, transforming each Value into a string using the value2Str auxiliary function. The resulting strings are then concatenated with commas.  
+- `state2Str`:  This function orders the state alphabetically and then converts it into a string, It does this by using the `stateSort` and the `state2StrAux auxiliary function.
 
 ## Run 
 
 After implementing these initial functions we started implementing the `run` function. This function executes instructions in the low-level machine making use of the stack and changing the values in state. To do this, we recursively go through the instructions, executing each instruction with the help of the `execute` auxiliary function. At the end, we return the final (c, e, s).
 
-Even though the `run` executes all the instructions the real brain of the machine is in the `execute` function, this function executes an instruction in the low-level machine. it receives the Instruction, the stack, and the state, it manipulates the stack and the state and then it returns a tuple with the updated (stack, state). 
+Even though the `run` executes all the instructions the real brain of the machine is in the `execute` function. This function executes an instruction in the low-level machine. It receives the Instruction, the stack, and the state, manipulates the stack and the state and then it returns a tuple with the updated (stack, state). 
 There were a lot of instructions defined, and, to not get the code too confusing, we didn't use a case of pattern matching, but instead, we implemented a different `execute` function for each instruction. The instructions implemented were the following:
   - `Push`: For this instruction, we just add the IntValue to the top of the stack.
   - `Tru`: For this instruction, we just add the `TT` to the top of the stack.
@@ -53,15 +58,15 @@ There were a lot of instructions defined, and, to not get the code too confusing
 
 Several auxiliary functions were implemented to the functionality of this parte:
 
-  - isBool: Determines whether a Value is a boolean.
-  - findFirst2Int: Finds the first two IntValue elements from the stack.
-  - removeFirst: Removes the first occurrence of a specified value from a list.
-  - isInt: Checks if a Value is an IntValue.
-  - findValueFromKey: Locates the Value of a variable in the state.
-  - removeKey: Removes a specified variable-value pair from the state.
-  - value2Str : Converts a Value to a string
-  - stateSort : Orders the state alphabetically 
-  - pair2Str : converts a pair to a string
+  - `isBool`: Determines whether a Value is a boolean.
+  - `findFirst2Int`: Finds the first two IntValue elements from the stack.
+  - `removeFirst`: Removes the first occurrence of a specified value from a list.
+  - `isInt`: Checks if a Value is an IntValue.
+  - `findValueFromKey`: Locates the Value of a variable in the state.
+  - `removeKey`: Removes a specified variable-value pair from the state.
+  - `value2Str`: Converts a Value to a string
+  - `stateSort`: Orders the state alphabetically 
+  - `pair2Str`: Converts a pair to a string
 
 Concluding, we can run the machine with the `run` function, which receives a state and returns a different state that is the result of the execution of the instructions with the function `execute`. The `execute` function receives an instruction, a stack, and a state, and returns a tuple with the updated stack and state. The `execute` function is implemented with a different procedure for each instruction, and each of those functions returns the updated stack and state.
 
@@ -69,8 +74,8 @@ Concluding, we can run the machine with the `run` function, which receives a sta
 
 To test the implementation, we used the `testAssembler` function given, and it worked as expected.
 When testing with the `testAssembler` function, we noticed that we were not removing the old values on the stack after using them. To do so, we had to change all the functions so that they return the rest of the stack after using the values. 
-Tests: 
 
+Tests: 
 ```hs
 testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10","")
 testAssembler [Fals,Push 3,Tru,Store "var",Store "a", Store "someVar"] == ("","a=3,someVar=False,var=True")
@@ -95,20 +100,22 @@ In this part, we were able to understand properly how the low-level machine work
 Now that we had the low-level machine-implemented, we needed to do a compiler that would translate a program written in a high-level language into a low-level machine program. To achieve that we implement a lexer, a parser, and a compiler. We also define some data types to represent the different types of expressions and instructions: 
 
 ## Lexer 
-First thing first, we started by implementing a lexer, this function was used to extract tokens from a string and store them in an array. Tokens are sequences of chars that can be treated as units, this goes from operators to keywords, brackets, semicolons, numbers, variable names, etc... 
-By doing this we were not only able to remove all the spaces and useless characters but it also made the process of parsing much more easier
+First thing first, we started by implementing a lexer. This function was used to extract tokens from a string and store them in an array. Tokens are sequences of chars that can be treated as units, this goes from operators to keywords, brackets, semicolons, numbers, variable names, etc... 
+By doing this we were not only able to remove all the spaces and useless characters but it also made the process of parsing much more easier.
 
 ### Lexer implementation
 
 To implement the lexer we created a function that processed each character in the input string based on specific conditions:
-Standard characters like ";", "(", ")", "+", "-", or "*" were added to the list of tokens.
-For "=", the lexer checked the next character to distinguish between the assignment operator "=" and the equality operator "==".
-Special tokens like ":=" and "<=" were identified based on the next two characters.
-The "¬" character was treated as "not" and added to the list of tokens.
-Numbers were extracted using the auxiliary function getInt, while letters were processed using getWord.
-Spaces were ignored, and any other characters resulted in an error.
+
+- Standard characters like ";", "(", ")", "+", "-", or "*" were added to the list of tokens.
+- For "=", the lexer checked the next character to distinguish between the assignment operator "=" and the equality operator "==".
+- Special tokens like ":=" and "<=" were identified based on the next two characters.
+- The "¬" character was treated as "not" and added to the list of tokens.
+- Numbers were extracted using the auxiliary function getInt, while letters were processed using getWord.
+- Spaces were ignored, and any other characters resulted in an error.
 
 ## Compiler
+
 After having implemented the lexer, we started working on the compiler itself. We decided to leave the parser for the end as it would be easier to implement it after having defined what the compiler would receive and how would it work.
 This function is the main piece of this second part it receives an array of high-level instructions and converts them to low-level instructions that our previously implemented machine can execute.
 
@@ -119,14 +126,13 @@ Aexp included options such as Num (for numbers), Var (for variables), AddE, SubE
 Bexp covered boolean values, equality checks (EqE and EqBexpE), lower or equal checks (LeE), negation (Neg), and conjunction (And).
 Stm dealt with both arithmetic and boolean expressions, variable assignments (Assign), if statements (If), and while statements (While).
 
-
 ### Compiler  implementation
 
 Having finished defining all types we started implementing the compiler, to do that we have defined 3 functions called `compile`, `compA`, and  `compB` which will convert the statements and the expressions previously defined into code for our machine.
 
 #### CompA
 
-This function will  be in charge of converting all the arithmetic expressions into code, to do that it was implemented with a different procedure for each expression it receives:
+This function will be in charge of converting all the arithmetic expressions into code, to do that it was implemented with a different procedure for each expression it receives:
 
   - `Number x` - Adds `Push x` to the list of instructions
   - `Var x` - Adds `Fetch x` to the list of instructions
