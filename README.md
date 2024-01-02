@@ -52,15 +52,16 @@ There were a lot of instructions defined, and, to not get the code too confusing
 ## Auxiliary Functions
 
 Several auxiliary functions were implemented to the functionality of this parte:
-isBool: Determines whether a Value is a boolean.
-findFirst2Int: Finds the first two IntValue elements from the stack.
-removeFirst: Removes the first occurrence of a specified value from a list.
-isInt: Checks if a Value is an IntValue.
-findValueFromKey: Locates the Value of a variable in the state.
-removeKey: Removes a specified variable-value pair from the state.
-value2Str : Converts a Value to a string
-stateSort : Orders the state alphabetically 
-pair2Str : converts a pair to a string
+
+  - isBool: Determines whether a Value is a boolean.
+  - findFirst2Int: Finds the first two IntValue elements from the stack.
+  - removeFirst: Removes the first occurrence of a specified value from a list.
+  - isInt: Checks if a Value is an IntValue.
+  - findValueFromKey: Locates the Value of a variable in the state.
+  - removeKey: Removes a specified variable-value pair from the state.
+  - value2Str : Converts a Value to a string
+  - stateSort : Orders the state alphabetically 
+  - pair2Str : converts a pair to a string
 
 Concluding, we can run the machine with the `run` function, which receives a state and returns a different state that is the result of the execution of the instructions with the function `execute`. The `execute` function receives an instruction, a stack, and a state, and returns a tuple with the updated stack and state. The `execute` function is implemented with a different procedure for each instruction, and each of those functions returns the updated stack and state.
 
@@ -126,21 +127,24 @@ Having finished defining all types we started implementing the compiler, to do t
 #### CompA
 
 This function will  be in charge of converting all the arithmetic expressions into code, to do that it was implemented with a different procedure for each expression it receives:
-`Number x` - Adds `Push x` to the list of instructions
-`Var x` - Adds `Fetch x` to the list of instructions
-`AddE x1 x2` - Adds the result of `compA x1` then the result of `compA x2` and in the end `Add` to the list of instructions
-`SubE x1 x2` - Adds the result of `compA x1` then the result of `compA x2` and in the end `Sub` to the list of instructions
-`MultE x1 x2` - Adds the result of `compA x1` then the result of `compA x2` and in the end `Mult` to the list of instructions
+
+  - `Number x` - Adds `Push x` to the list of instructions
+  - `Var x` - Adds `Fetch x` to the list of instructions
+  - `AddE x1 x2` - Adds the result of `compA x1` then the result of - `compA x2` and in the end `Add` to the list of instructions
+  - `SubE x1 x2` - Adds the result of `compA x1` then the result of - `compA x2` and in the end `Sub` to the list of instructions
+  - `MultE x1 x2` - Adds the result of `compA x1` then the result of 
+  - `compA x2` and in the end `Mult` to the list of instructions
 
 #### CompB
 
 Similar to compA this function will  be in charge of converting all the boolean expressions into code, to do that it was implemented with a different procedure for each expression it receives:
-`Boolean x` - if x is True adds `Tru` to the list of instructions, otherwise, it adds `Fals`
-`EqE x1 x2` - Adds the result of `compA x1` then the result of `compA x2` and in the end `Eq` to the list of instructions
-`EqBexpE x1 x2` - Similar to EqE but for boolean equality Adds the result of `compB x1` then the result of `compB x2` and in the end `Eq` to the list of instructions
-`LeE x1 x2` - Adds the result of `compB x1` then the result of `compB x2` and in the end `Leq` to the list of instructions
-`Neg x` -Adds the result of `compB x` then `Leq` to the list of instructions
-`And x1 x2` - Adds the result of `compB x1` then the result of `compB x2` and in the end `And`  to the list of instructions
+
+  - `Boolean x` - if x is True adds `Tru` to the list of instructions, otherwise, it adds `Fals`
+- `EqE x1 x2` - Adds the result of `compA x1` then the result of - `compA x2` and in the end `Eq` to the list of instructions
+- `EqBexpE x1 x2` - Similar to EqE but for boolean equality Adds the result of `compB x1` then the result of `compB x2` and in the end `Eq` to the list of instructions
+- `LeE x1 x2` - Adds the result of `compB x1` then the result of `compB x2` and in the end `Leq` to the list of instructions
+- `Neg x` -Adds the result of `compB x` then `Leq` to the list of instructions
+- `And x1 x2` - Adds the result of `compB x1` then the result of - `compB x2` and in the end `And`  to the list of instructions
 
 #### Compile
 
@@ -192,13 +196,15 @@ Once that was done we implemented a function called `ParseAex` that initializes 
 At the first iteration the token at the beginning of the list is set as the current Node, then every time the function reads a token it compares its precedence with the current node, if the precedence of the new token is lower or equal to the precedence of the Node it simply adds the new token to the right of the current token, however, if the precedence is higher the new Token becomes the Node and both the old token and the right list are appended to the left.
 Once the list of tokens is empty both the left and right lists are recursively processed, and a Tree is created with the current node and the resulting left and right Trees.
 
-Example of execution:
-Exp = 3+4 == 5 = 4*7= 9
+Example : 1+6 == 7
+
+![ex1](/img/ex1.png)
 
 After this, the only thing left in this part was to deal with brackets. For that every time a token"(" was read the contents inside it were added to the left or right list without being processed, only processing its content once the list of tokens contained only the content inside the brackets. This way we ensured that everything inside the brackets were always at the end of the tree, thus being the first to be processed.
 
-Example of execution:
-Exp = (1+3)*7
+Example: (1+3)*7
+
+![ex2](/img/ex2.png)
 
 #### Parsing of statements
 
@@ -206,24 +212,31 @@ For this part, we simply created a function `parseStatements` that iterates thro
 For the "If" token it calls the `parseIf` function that sets the node to "if"
 parses the condition expression and sets it to its left branch, and then for the right branch it calls the function `parseIfElse` which will create another Tree with the Node set as "IfElse" and with the left and right branches containing the results of the parsing code of the if and else statement respectively.
 
-Example:
-   if(True) then x else y
+Example: if(True) then x else y
+
+![ex3](/img/ex3.png)
 
 For the "While" token it calls the `parseWhile` function which similar to the  `parseIf` function parses the condition and sets it to the left branch, while the code to be executed is parsed and set to the right branch
-Example:
-Ex :while(True) do x
+
+Example: while(True) do x
+
+![ex4](/img/ex4.png)
 
 For the ":=" token it calls the `parseAssign` function that sets the variable to the left branch and the parsed arithmetic expression on the right branch
-Example :
-Ex: x:= 3+5;
+
+Example:  x:= 3+5;
+
+![ex5](/img/ex5.png)
 
 Anything else it considers an arithmetic expression.
 Example :
 Ex 3+5;
 
 To group instructions in the binary Tree the function `parseStatement` will always create a Tree with the node set to "Seq" and with one statement in the left branch and either another "Seq" tree when there are more instructions to execute or a Leaf otherwise.
-Example:
- Ex if(x) then (x y) else (z)
+
+Example:  if(x) then (x y) else (z)
+
+![ex5](/img/ex5.png)
 
 #### Parsing of The Binary Tree
 
@@ -242,6 +255,52 @@ compile [Aex (Num 1), Aex (Var "x")] == [Push 1,Fetch "x"]
 ```
 
 To test the lexer function, we used the arguments of the tests given, and it worked as expected.
+
+To test the whole program we ran the following tests:
+
+```hs
+testParser "x := 6; y := 6; if y<=5 then x:=5; else (x:=10; y:=20;);" == ("","x=10,y=20")
+
+testParser "x:=10;" == ("","x=10")
+
+testParser "if 2 == 3 then x:=20; else x:=10;" == ("","x=10")
+
+testParser "par := 0; x:=10; while (not (x==0)) do (if (par == 0) then par:=1; else par := 0; x := x - 1;);" == ("","par=0,x=0")
+
+testParser "par := 0; x:=9; while (not (x==0)) do (if (par == 0) then par:=1; else par := 0; x := x - 1;);" == ("","par=1,x=0")
+
+testParser "x:=5; acc := 1; while (not(x==1)) do (acc := acc * x; x := x-1;);" == ("","acc=120,x=1")
+
+testParser "if (True and True and True and True) then x:=1; else x:=0;" ("","x=1")
+
+testParser "if (not True and True and True and True) then x:=1; else x:=0;" ("","x=0")
+
+testParser "x:=10; if (True and 1+2 == 2+1) then x:=x+1; else x:=x-1;" == ("","x=11")
+
+testParser "x := 5; x := x - 1;" == ("","x=4")
+
+testParser "x := 0 - 2;" == ("","x=-2")
+
+testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
+
+testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1")
+
+testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2")
+
+testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
+
+testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68")
+
+testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
+
+testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
+
+testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
+
+testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
+
+testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+```
 
 
 ## Part 2 - Conclusion
