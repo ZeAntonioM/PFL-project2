@@ -1,4 +1,5 @@
 module Main where
+
 import Parser ( parseTree, parseStatements)
 import Lexer (lexer)
 import Header
