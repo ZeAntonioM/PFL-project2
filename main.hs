@@ -5,8 +5,9 @@ import Lexer (lexer)
 import Header
 import Utils
 import Data.Char
--- Part 1
 
+
+-- Part 1
 
 -- Function to create an empty stack
 createEmptyStack :: Stack
@@ -31,8 +32,6 @@ state2StrAux :: [([Char], Value)] -> [Char]
 state2StrAux [] = ""
 state2StrAux [curr] = pair2Str curr
 state2StrAux  (curr:rest) = pair2Str curr ++ "," ++ state2Str rest
-
-
 
 -- Function to execute an instruction
 execute :: Inst -> Stack -> State -> (Stack, State)
